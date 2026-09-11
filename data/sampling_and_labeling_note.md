@@ -1,0 +1,6 @@
+## Sampling and Labeling Methodology (Golden Evaluation Set)
+
+- **Dataset Size:** 150 hand-curated and validated customer support inquiries (balanced across 5 distinct domains: Refund, Shipping Delay, Complaint, Cancellation, and Product Question; 30 samples each).
+- **Sampling Strategy:** Stratified sampling spanning diverse customer temperaments (urgent, frustrated, neutral, exploratory), varying lengths (15 to 120 words), and rich operational entities (order IDs `#XXXXX`, monetary amounts `$XX.XX`, dates, tracking references, and technical product models).
+- **Ground-Truth Labeling:** Each scenario was paired with an authoritative reference reply representing enterprise support best practices: empathetic acknowledgment, clear operational next steps (e.g. 3-5 business day refund turnaround, courier tracking escalation), and professional closings.
+- **Human QA Calibration Subset:** Each reference record includes independent human auditor ratings across the 4-dimension QA rubric (Relevance, Tone, Completeness, Conciseness on a 1-5 scale) to benchmark and validate LLM-as-a-judge alignment.

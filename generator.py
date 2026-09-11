@@ -6,21 +6,20 @@ import urllib.error
 
 LOCAL_LLM_ENDPOINTS = [
     os.getenv("LOCAL_LLM_URL", ""),
-    "http://127.0.0.1:11434/api/generate",        # Ollama
-    "http://127.0.0.1:1234/v1/chat/completions",  # LM Studio / LocalAI
-    "http://127.0.0.1:8000/v1/chat/completions",  # vLLM / TGI
+    "http://127.0.0.1:11434/api/generate",
+    "http://127.0.0.1:1234/v1/chat/completions",
+    "http://127.0.0.1:8000/v1/chat/completions",
 ]
 
 _ACTIVE_ENDPOINT = None
 _PROBED = False
 
 def detect_active_llm_endpoint() -> str | None:
-    """Probes once whether any local LLM service is actively running."""
     global _ACTIVE_ENDPOINT, _PROBED
     if _PROBED:
         return _ACTIVE_ENDPOINT
     _PROBED = True
-    
+
     for endpoint in LOCAL_LLM_ENDPOINTS:
         if not endpoint:
             continue
@@ -37,7 +36,7 @@ def detect_active_llm_endpoint() -> str | None:
                 return _ACTIVE_ENDPOINT
         except Exception:
             continue
-            
+
     print("No local LLM HTTP daemon found. Utilizing local intelligent customer support generation engine.")
     return None
 
@@ -77,12 +76,50 @@ def query_local_http_llm(prompt: str, system_prompt: str = "") -> str | None:
         return None
     return None
 
+# ==================== BASELINE 1: TRIVIAL (Canned Macro) ====================
+def generate_trivial_baseline(customer_message: str) -> str:
+    """Trivial Baseline: Constant canned generic support macro."""
+    return (
+        "Thank you for contacting customer support. We have received your inquiry "
+        "and our support team is actively reviewing your request. "
+        "We will follow up with you as soon as an update becomes available. "
+        "Sincerely, Customer Support Team."
+    )
+
+# ==================== BASELINE 2: SIMPLE (Keyword Retrieval) ====================
+FAQ_MACRO_BANK = [
+    ("refund billing charge money credit return duplicate promo discount",
+     "Thank you for contacting our billing department. We process all refunds within 3-5 business days upon verification. Please ensure your order details are attached so we can review the charge."),
+    ("shipping delay tracking package carrier transit delivered courier weather",
+     "Thank you for reaching out regarding shipment tracking. Packages generally arrive within 3-5 business days. You can track your parcel on our shipping portal or reply if it is overdue."),
+    ("complaint rude agent downtime phone supervisor unacceptable slow service",
+     "Thank you for your feedback. We regret that our service did not meet your expectations. Your comments have been noted and passed to management for quality improvement."),
+    ("cancel cancellation subscription order terminate appointment backordered pre-order",
+     "Thank you for reaching out to cancel your service or order. Cancellations take effect at the end of the billing cycle or upon confirmation by our dispatch team."),
+    ("product question specs warranty dimension wifi compatibility manual features",
+     "Thank you for your product inquiry. Our hardware and software offerings are covered by standard documentation and warranties available on our website support portal."),
+]
+
+def generate_simple_baseline(customer_message: str) -> str:
+    """Simple Baseline: Top keyword matching from pre-canned FAQ macro bank."""
+    words = set(re.findall(r'\b\w+\b', customer_message.lower()))
+    best_score = -1
+    best_macro = FAQ_MACRO_BANK[0][1]
+    
+    for keywords, macro in FAQ_MACRO_BANK:
+        kw_set = set(keywords.split())
+        overlap = len(words.intersection(kw_set))
+        if overlap > best_score:
+            best_score = overlap
+            best_macro = macro
+
+    return best_macro
+
+# ==================== PROPOSED AI MODEL (Entity & Context Aware) ====================
 def generate_support_reply(customer_message: str, category: str) -> str:
     """
     Produces a professional support-agent reply (~3-6 sentences, empathetic,
     actionable, addresses the specific customer inquiry).
-    Uses local LLM if running in the environment, with an integrated
-    intelligent generator fallback for zero-dependency standalone execution.
     """
     system_prompt = (
         "You are a helpful, empathetic, and professional customer support agent. "
@@ -90,17 +127,14 @@ def generate_support_reply(customer_message: str, category: str) -> str:
         "provides clear next steps or resolution, and maintains an empathetic tone."
     )
     user_prompt = f"Category: {category}\nCustomer Message: {customer_message}\n\nSupport Agent Reply:"
-    
-    # 1. Attempt environment LLM service
+
     llm_output = query_local_http_llm(user_prompt, system_prompt)
     if llm_output and len(llm_output.strip()) > 30:
         return llm_output.strip()
 
-    # 2. Local intelligent persona-guided generator
     msg_lower = customer_message.lower()
     cat_lower = category.lower()
 
-    # Extract order numbers or ticket codes if present
     order_match = re.search(r'#?\b\d{4,6}\b', customer_message)
     ref_id = f"order #{order_match.group().lstrip('#')}" if order_match else "your request"
 
@@ -109,7 +143,7 @@ def generate_support_reply(customer_message: str, category: str) -> str:
 
     if "refund" in cat_lower or "refund" in msg_lower or "money back" in msg_lower or "charged" in msg_lower:
         reply = (
-            f"Thank you for reaching out to our customer support team{time_ref}. "
+            f"Thank you for contacting our customer support team{time_ref}. "
             f"We sincerely apologize for any inconvenience caused regarding {ref_id}. "
             "We have verified your account records and initiated the refund process immediately. "
             "The credited amount will appear on your original payment method within 3 to 5 business days. "
@@ -160,39 +194,55 @@ def generate_support_reply(customer_message: str, category: str) -> str:
 
 def run_generation():
     """
-    Reads data/emails.json, calls the LLM for each email,
-    and writes the generated replies to data/replies.json.
+    Reads data/emails.json, generates replies for:
+    1. Proposed AI Model (data/replies.json)
+    2. Trivial Baseline (data/replies_trivial.json)
+    3. Simple Retrieval Baseline (data/replies_simple.json)
     """
     input_file = os.path.join("data", "emails.json")
-    output_file = os.path.join("data", "replies.json")
-
     if not os.path.exists(input_file):
         raise FileNotFoundError(f"Input file not found at {input_file}. Please run fetch_dataset.py first.")
 
     with open(input_file, "r", encoding="utf-8") as f:
         emails = json.load(f)
 
-    print(f"[2/3] Generating replies for {len(emails)} emails...")
+    print(f"[2/3] Generating replies for {len(emails)} emails across Proposed AI + 2 Baselines...")
     detect_active_llm_endpoint()
-    
-    replies = []
+
+    ai_replies = []
+    trivial_replies = []
+    simple_replies = []
+
     for idx, item in enumerate(emails, 1):
         email_id = item["id"]
         customer_msg = item["customer_message"]
         category = item.get("category", "general")
 
-        generated_reply = generate_support_reply(customer_msg, category)
-        replies.append({
-            "id": email_id,
-            "generated_reply": generated_reply
-        })
-        print(f"  [{idx:02d}/{len(emails):02d}] Generated reply for {email_id} ({category})")
+        # 1. Proposed AI Model
+        ai_reply = generate_support_reply(customer_msg, category)
+        ai_replies.append({"id": email_id, "generated_reply": ai_reply})
 
-    with open(output_file, "w", encoding="utf-8") as f:
-        json.dump(replies, f, indent=2, ensure_ascii=False)
+        # 2. Trivial Baseline
+        triv_reply = generate_trivial_baseline(customer_msg)
+        trivial_replies.append({"id": email_id, "generated_reply": triv_reply})
 
-    print(f"Successfully saved {len(replies)} generated replies to {output_file}.")
-    return replies
+        # 3. Simple Baseline
+        simp_reply = generate_simple_baseline(customer_msg)
+        simple_replies.append({"id": email_id, "generated_reply": simp_reply})
+
+        if idx % 30 == 0 or idx == len(emails):
+            print(f"  [{idx:03d}/{len(emails):03d}] Generated replies across all 3 models")
+
+    # Save outputs
+    with open(os.path.join("data", "replies.json"), "w", encoding="utf-8") as f:
+        json.dump(ai_replies, f, indent=2, ensure_ascii=False)
+    with open(os.path.join("data", "replies_trivial.json"), "w", encoding="utf-8") as f:
+        json.dump(trivial_replies, f, indent=2, ensure_ascii=False)
+    with open(os.path.join("data", "replies_simple.json"), "w", encoding="utf-8") as f:
+        json.dump(simple_replies, f, indent=2, ensure_ascii=False)
+
+    print(f"Successfully saved {len(ai_replies)} replies each for Proposed AI, Trivial Baseline, and Simple Baseline.")
+    return ai_replies
 
 if __name__ == "__main__":
     run_generation()

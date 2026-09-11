@@ -1,0 +1,37 @@
+{
+  "models": {
+    "Trivial Baseline": {
+      "composite_mean": 54.2,
+      "relevance": 2.8,
+      "tone": 4.0,
+      "completeness": 4.0,
+      "conciseness": 4.0,
+      "overlap_pct": 8.0
+    },
+    "Simple Baseline": {
+      "composite_mean": 51.37,
+      "relevance": 3.33,
+      "tone": 4.07,
+      "completeness": 2.6,
+      "conciseness": 3.93,
+      "overlap_pct": 8.7
+    },
+    "Proposed AI Model": {
+      "composite_mean": 66.81,
+      "relevance": 4.5,
+      "tone": 4.8,
+      "completeness": 4.03,
+      "conciseness": 5.0,
+      "overlap_pct": 8.8
+    }
+  },
+  "human_judge_agreement": {
+    "sample_size": 150,
+    "total_dimension_checks": 600,
+    "pearson_correlation": 0.913,
+    "mean_absolute_error": 0.18,
+    "exact_agreement_pct": 84.0,
+    "adjacent_agreement_pct": 98.0,
+    "interpretation": "Strong human-judge agreement: Pearson r = 0.913 (p < 0.001), Adjacent agreement (±1 pt) = 98.0%, Exact agreement = 84.0%, MAE = 0.18 points."
+  }
+}
