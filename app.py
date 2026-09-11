@@ -223,4 +223,7 @@ with tab_table:
             "Composite Score": sc["composite"]
         })
     df_table = pd.DataFrame(table_rows)
-    st.dataframe(df_table, use_container_width=True, hide_index=True)
+    try:
+        st.dataframe(df_table, width="stretch", hide_index=True)
+    except TypeError:
+        st.dataframe(df_table, use_container_width=True, hide_index=True)
