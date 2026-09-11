@@ -3,7 +3,7 @@
 An end-to-end Generative AI pipeline that takes incoming customer emails, generates suggested replies **grounded in a dataset of past emails and their approved responses via dynamic few-shot RAG**, and measures the operational quality of each response using an enterprise LLM-as-a-judge QA harness calibrated against human auditor ratings.
 
 🔗 **GitHub Repository:** [https://github.com/ak-logith/hiver_challenge](https://github.com/ak-logith/hiver_challenge)  
-📄 **Comprehensive Evaluation Report:** [`REPORT.md`](file:///e:/Projects/hiver_challenge/REPORT.md)  
+📄 **Comprehensive Evaluation Report:** [`REPORT.md`](REPORT.md)  
 ⏱️ **Run Time:** Under 4 seconds end-to-end across 150 test cases and two baselines.
 
 ---
@@ -11,14 +11,14 @@ An end-to-end Generative AI pipeline that takes incoming customer emails, genera
 ## 1. The Dataset: Provenance & Representativeness
 
 ### Where It Came From
-The dataset ([`data/emails.json`](file:///e:/Projects/hiver_challenge/data/emails.json)) comprises **150 hand-curated, structured customer support email pairs** modeled after the Hugging Face `Bitext` benchmark schema (`id`, `customer_message`, `category`, `reference_reply`). It is balanced equally across 5 core support categories (30 inquiries each):
+The dataset ([`data/emails.json`](data/emails.json)) comprises **150 hand-curated, structured customer support email pairs** modeled after the Hugging Face `Bitext` benchmark schema (`id`, `customer_message`, `category`, `reference_reply`). It is balanced equally across 5 core support categories (30 inquiries each):
 1. **Refunds & Billing Discrepancies:** Duplicate charges, damaged items, returned orders, missing promo codes.
 2. **Shipping & Logistics Delays:** Tracking delays, weather disruptions, express delivery refunds, address rerouting.
 3. **Complaints & Service Escalations:** Rude agent behavior, unexpected platform outages, missed callbacks, warehouse errors.
 4. **Cancellations & Terminations:** Immediate post-checkout cancellation, recurring subscription downgrades, appointment cancellation.
 5. **Product & Technical Inquiries:** Hardware specifications (Wi-Fi 5GHz, heat resistance, warranty drop coverage), software compatibility (Apple Silicon/macOS).
 
-*(Detailed sampling notes available in [`data/sampling_and_labeling_note.md`](file:///e:/Projects/hiver_challenge/data/sampling_and_labeling_note.md)).*
+*(Detailed sampling notes available in [`data/sampling_and_labeling_note.md`](data/sampling_and_labeling_note.md)).*
 
 ### Why It Is Representative
 - **Entity Diversity:** Emails contain realistic operational entities (Order IDs `#XXXXX`, monetary values, specific software versions, dates, tracking statuses).
